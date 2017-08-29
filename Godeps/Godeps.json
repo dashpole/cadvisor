@@ -184,22 +184,12 @@
 			"Rev": "c6f63e298ebb1dd0a2ce5ada0c0d39e248132634"
 		},
 		{
-			"ImportPath": "github.com/docker/docker/pkg/longpath",
-			"Comment": "v1.11.2",
-			"Rev": "b9f10c951893f9a00865890a5232e85d770c1087"
-		},
-		{
 			"ImportPath": "github.com/docker/docker/pkg/mount",
 			"Comment": "v1.11.2",
 			"Rev": "b9f10c951893f9a00865890a5232e85d770c1087"
 		},
 		{
 			"ImportPath": "github.com/docker/docker/pkg/symlink",
-			"Comment": "v1.11.2",
-			"Rev": "b9f10c951893f9a00865890a5232e85d770c1087"
-		},
-		{
-			"ImportPath": "github.com/docker/docker/pkg/system",
 			"Comment": "v1.11.2",
 			"Rev": "b9f10c951893f9a00865890a5232e85d770c1087"
 		},
@@ -297,6 +287,11 @@
 			"ImportPath": "github.com/eapache/queue",
 			"Comment": "v1.0.2",
 			"Rev": "ded5959c0d4e360646dc9e9908cff48666781367"
+		},
+		{
+			"ImportPath": "github.com/fsnotify/fsnotify",
+			"Comment": "v1.4.2-6-g4da3e2c",
+			"Rev": "4da3e2cfbabc9f751898f250b49f2439785783a1"
 		},
 		{
 			"ImportPath": "github.com/garyburd/redigo/internal",
@@ -546,14 +541,6 @@
 			"Rev": "1e2e08e8a2dcdacaae3f14ac44c5cfa31361f270"
 		},
 		{
-			"ImportPath": "golang.org/x/crypto/ssh/terminal",
-			"Rev": "eb71ad9bd329b5ac0fd0148dd99bd62e8be8e035"
-		},
-		{
-			"ImportPath": "golang.org/x/exp/inotify",
-			"Rev": "292a51b8d262487dab23a588950e8052d63d9113"
-		},
-		{
 			"ImportPath": "golang.org/x/net/context",
 			"Rev": "5627bad10b821d907ac4dc81fb3535ec7dd81c2b"
 		},
@@ -599,10 +586,6 @@
 		},
 		{
 			"ImportPath": "golang.org/x/sys/unix",
-			"Rev": "22e23b74325bf60e4cc1ce7bdc157eda0d8b5c13"
-		},
-		{
-			"ImportPath": "golang.org/x/sys/windows",
 			"Rev": "22e23b74325bf60e4cc1ce7bdc157eda0d8b5c13"
 		},
 		{

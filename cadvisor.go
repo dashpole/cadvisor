@@ -27,7 +27,8 @@ import (
 	"time"
 
 	"github.com/google/cadvisor/container"
-	cadvisorhttp "github.com/google/cadvisor/http"
+	dockerhandler "github.com/google/cadvisor/container/docker"
+	// cadvisorhttp "github.com/google/cadvisor/http"
 	"github.com/google/cadvisor/manager"
 	"github.com/google/cadvisor/utils/sysfs"
 	"github.com/google/cadvisor/version"
@@ -35,6 +36,11 @@ import (
 	"crypto/tls"
 
 	"github.com/golang/glog"
+
+	"go.opencensus.io/exporter/prometheus"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/stats/view"
+	"go.opencensus.io/tag"
 )
 
 var argIp = flag.String("listen_ip", "", "IP to listen on, defaults to all IPs")
@@ -62,18 +68,18 @@ var (
 	// Metrics to be ignored.
 	// Tcp metrics are ignored by default.
 	ignoreMetrics metricSetValue = metricSetValue{container.MetricSet{
-		container.NetworkTcpUsageMetrics: struct{}{},
-		container.NetworkUdpUsageMetrics: struct{}{},
+		container.NetworkTcpUsageMetrics:  struct{}{},
+		container.NetworkUdpUsageMetrics:  struct{}{},
 		container.ProcessSchedulerMetrics: struct{}{},
 	}}
 
 	// List of metrics that can be ignored.
 	ignoreWhitelist = container.MetricSet{
-		container.DiskUsageMetrics:       struct{}{},
-		container.NetworkUsageMetrics:    struct{}{},
-		container.NetworkTcpUsageMetrics: struct{}{},
-		container.NetworkUdpUsageMetrics: struct{}{},
-		container.PerCpuUsageMetrics:     struct{}{},
+		container.DiskUsageMetrics:        struct{}{},
+		container.NetworkUsageMetrics:     struct{}{},
+		container.NetworkTcpUsageMetrics:  struct{}{},
+		container.NetworkUdpUsageMetrics:  struct{}{},
+		container.PerCpuUsageMetrics:      struct{}{},
 		container.ProcessSchedulerMetrics: struct{}{},
 	}
 )
@@ -146,13 +152,27 @@ func main() {
 		mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
 	}
 
-	// Register all HTTP handlers.
-	err = cadvisorhttp.RegisterHandlers(mux, containerManager, *httpAuthFile, *httpAuthRealm, *httpDigestFile, *httpDigestRealm)
+	exporter, err := prometheus.NewExporter(prometheus.Options{})
 	if err != nil {
-		glog.Fatalf("Failed to register HTTP handlers: %v", err)
+		glog.Fatal(err)
 	}
+	view.RegisterExporter(exporter)
+	mux.Handle("/metrics", exporter)
 
-	cadvisorhttp.RegisterPrometheusHandler(mux, containerManager, *prometheusEndpoint, nil)
+	dockerhandler.CPUUsage = stats.Int64("cpu_usage", "cumulative cpu usage", stats.UnitNone)
+	dockerhandler.NameKey, err = tag.NewKey("container_name")
+	if err != nil {
+		glog.Fatal(err)
+	}
+	if err := view.Register(&view.View{
+		Name:        "container_cpu_usage",
+		Description: "cumulative cpu usage",
+		TagKeys:     []tag.Key{dockerhandler.NameKey},
+		Measure:     dockerhandler.CPUUsage,
+		Aggregation: view.LastValue(),
+	}); err != nil {
+		glog.Fatal(err)
+	}
 
 	// Start the manager.
 	if err := containerManager.Start(); err != nil {

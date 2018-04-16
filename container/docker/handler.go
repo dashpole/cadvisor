@@ -38,6 +38,9 @@ import (
 	cgroupfs "github.com/opencontainers/runc/libcontainer/cgroups/fs"
 	libcontainerconfigs "github.com/opencontainers/runc/libcontainer/configs"
 	"golang.org/x/net/context"
+
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 )
 
 const (
@@ -48,6 +51,11 @@ const (
 
 	// Path to the directory where docker stores log files if the json logging driver is enabled.
 	pathToContainersDir = "containers"
+)
+
+var (
+	CPUUsage *stats.Int64Measure
+	NameKey  tag.Key
 )
 
 type dockerContainerHandler struct {
@@ -98,6 +106,8 @@ type dockerContainerHandler struct {
 	reference info.ContainerReference
 
 	libcontainerHandler *containerlibcontainer.Handler
+
+	ctx context.Context
 }
 
 var _ container.ContainerHandler = &dockerContainerHandler{}
@@ -196,6 +206,11 @@ func newDockerContainerHandler(
 		return nil, fmt.Errorf("failed to inspect container %q: %v", id, err)
 	}
 
+	ctx, err := tag.New(context.Background(), tag.Insert(NameKey, name))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create tag %s with value %s: %v", NameKey, name, err)
+	}
+
 	// TODO: extract object mother method
 	handler := &dockerContainerHandler{
 		machineInfoFactory: machineInfoFactory,
@@ -208,6 +223,7 @@ func newDockerContainerHandler(
 		labels:             ctnr.Config.Labels,
 		ignoreMetrics:      ignoreMetrics,
 		zfsParent:          zfsParent,
+		ctx:                ctx,
 	}
 	// Timestamp returned by Docker is in time.RFC3339Nano format.
 	handler.creationTime, err = time.Parse(time.RFC3339Nano, ctnr.Created)
@@ -425,25 +441,26 @@ func (self *dockerContainerHandler) getFsStats(stats *info.ContainerStats) error
 
 // TODO(vmarmol): Get from libcontainer API instead of cgroup manager when we don't have to support older Dockers.
 func (self *dockerContainerHandler) GetStats() (*info.ContainerStats, error) {
-	stats, err := self.libcontainerHandler.GetStats()
+	s, err := self.libcontainerHandler.GetStats()
 	if err != nil {
-		return stats, err
+		return s, err
 	}
+	stats.Record(self.ctx, CPUUsage.M(int64(s.Cpu.Usage.Total)))
 	// Clean up stats for containers that don't have their own network - this
 	// includes containers running in Kubernetes pods that use the network of the
 	// infrastructure container. This stops metrics being reported multiple times
 	// for each container in a pod.
 	if !self.needNet() {
-		stats.Network = info.NetworkStats{}
+		s.Network = info.NetworkStats{}
 	}
 
 	// Get filesystem stats.
-	err = self.getFsStats(stats)
+	err = self.getFsStats(s)
 	if err != nil {
-		return stats, err
+		return s, err
 	}
 
-	return stats, nil
+	return s, nil
 }
 
 func (self *dockerContainerHandler) ListContainers(listType container.ListType) ([]info.ContainerReference, error) {

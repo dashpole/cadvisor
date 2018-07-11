@@ -17,6 +17,7 @@ package metrics
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/google/cadvisor/container"
@@ -870,20 +871,16 @@ const (
 	// LabelName is the name of the name label.
 	LabelName = "name"
 	// LabelImage is the name of the image label.
-	LabelImage = "image"
+	LabelImage   = "image"
+	K8sPrefix    = "k8s"
+	K8sPodPrefix = "POD"
 )
 
 // DefaultContainerLabels implements ContainerLabelsFunc. It exports the
 // container name, first alias, image name as well as all its env and label
 // values.
 func DefaultContainerLabels(container *info.ContainerInfo) map[string]string {
-	set := map[string]string{LabelID: container.Name}
-	if len(container.Aliases) > 0 {
-		set[LabelName] = container.Aliases[0]
-	}
-	if image := container.Spec.Image; len(image) > 0 {
-		set[LabelImage] = image
-	}
+	set := BaseContainerLabels(container)
 	for k, v := range container.Spec.Labels {
 		set[ContainerLabelPrefix+k] = v
 	}
@@ -896,12 +893,15 @@ func DefaultContainerLabels(container *info.ContainerInfo) map[string]string {
 // BaseContainerLabels implements ContainerLabelsFunc. It only exports the
 // container name, first alias, and image name.
 func BaseContainerLabels(container *info.ContainerInfo) map[string]string {
-	set := map[string]string{LabelID: container.Name}
+	set := map[string]string{}
 	if len(container.Aliases) > 0 {
-		set[LabelName] = container.Aliases[0]
-	}
-	if image := container.Spec.Image; len(image) > 0 {
-		set[LabelImage] = image
+		meta := strings.Split(container.Aliases[0], "_")
+		if meta[0] == K8sPrefix && len(meta) >= 6 {
+			set["container_name"] = meta[1]
+			set["pod_name"] = meta[2]
+			set["pod_namespace"] = meta[3]
+			set["pod_id"] = meta[4]
+		}
 	}
 	return set
 }

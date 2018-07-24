@@ -3,4 +3,4 @@ bases:
 patches:
 - stackdriver-sidecar.yaml
 - critical-priority.yaml
-- cadvisor-args.yaml
+- filter-metrics.yaml

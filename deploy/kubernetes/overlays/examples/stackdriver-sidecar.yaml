@@ -15,7 +15,11 @@ spec:
         command:
           - /monitor
           - --stackdriver-prefix=custom.googleapis.com
-          - --source=cadvisor:http://localhost:8080
+          - --target-port=8080
+          - --component=cadvisor
+          # - --pod-id-label=pod_id
+          # - --namespace-id-label=pod_namespace
+          # - --container-name-label=container_name
         securityContext:
           runAsNonRoot: true
           readOnlyRootFilesystem: true

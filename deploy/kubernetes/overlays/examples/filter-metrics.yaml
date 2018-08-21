@@ -13,4 +13,5 @@ spec:
           - --disable_metrics=percpu,disk,network,tcp,udp # enable only diskIO, cpu, memory
       - name: prometheus-to-sd
         args:
+          # for the list of metrics cAdvisor provides, see https://github.com/google/cadvisor/blob/master/docs/storage/prometheus.md#prometheus-metrics
           - --whitelisted-metrics=container_cpu_usage_seconds_total,container_memory_working_set_bytes,container_fs_io_time_seconds_total

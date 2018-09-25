@@ -1,0 +1,14 @@
+# This patch is an example of setting arguments for the cAdvisor container.
+# This set of arguments enables cpu_load_average metrics
+apiVersion: apps/v1 # for Kubernetes versions before 1.9.0 use apps/v1beta2
+kind: DaemonSet
+metadata:
+  name: cadvisor
+spec:
+  template:
+    spec:
+      hostNetwork: true
+      containers:
+      - name: cadvisor
+        args:
+          - --enable_load_reader
